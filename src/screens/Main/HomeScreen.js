@@ -1,5 +1,4 @@
-// src/screens/Main/HomeScreen.js — Production upgrade
-// Uses AppContext, ThemeContext, SkeletonLoader, LiveIndicator, EmptyState
+// src/screens/Main/HomeScreen.js — Production upgrade (Fixed Search + Focus Issue)
 
 import React, { useState, useEffect, useCallback, useContext, useMemo, memo } from 'react';
 import {
@@ -13,12 +12,11 @@ import { AppContext } from '../../context/AppContext';
 import { useTheme } from '../../hooks/useTheme';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import LocationCard  from '../../components/LocationCard';
+import LocationCard from '../../components/LocationCard';
 import SkeletonLoader from '../../components/SkeletonLoader';
-import EmptyState     from '../../components/EmptyState';
-import LiveIndicator  from '../../components/LiveIndicator';
+import EmptyState from '../../components/EmptyState';
+import LiveIndicator from '../../components/LiveIndicator';
 
-// Memoised list item — prevents re-renders when other items change
 const ListItem = memo(({ item, crowdData, onPress }) => (
   <LocationCard location={item} crowdData={crowdData} onPress={onPress} />
 ));
@@ -29,9 +27,11 @@ export default function HomeScreen() {
   const { colors } = useTheme();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [refreshing, setRefreshing]   = useState(false);
-  const [isLoading, setIsLoading]     = useState(true);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Loading skeleton
   useEffect(() => {
     const t = setTimeout(() => {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -40,30 +40,58 @@ export default function HomeScreen() {
     return () => clearTimeout(t);
   }, []);
 
+  // Debounce search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 400);
+
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 700);
   }, []);
 
-  const handlePress = useCallback((id) => router.push(`/location/${id}`), [router]);
+  const handlePress = useCallback((id) => {
+    router.push(`/location/${id}`);
+  }, [router]);
 
-  const filteredLocations = useMemo(() =>
-    locations.filter(loc =>
-      loc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      loc.type.toLowerCase().includes(searchQuery.toLowerCase())
-    ),
-    [locations, searchQuery]
-  );
+  const filteredLocations = useMemo(() => {
+    if (!debouncedQuery) return locations;
+
+    return locations.filter(loc =>
+      loc.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+      loc.type.toLowerCase().includes(debouncedQuery.toLowerCase())
+    );
+  }, [locations, debouncedQuery]);
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
-      <Text style={[styles.greeting, { color: colors.text }]}>Anna Nagar, Chennai</Text>
+      <Text style={[styles.greeting, { color: colors.text }]}>
+        Anna Nagar, Chennai
+      </Text>
+
       <Text style={[styles.subGreeting, { color: colors.textSecondary }]}>
         {filteredLocations.length} locations nearby
       </Text>
 
-      <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border, ...colors.shadow }]}>
-        <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+      <View style={[
+        styles.searchBox,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          ...colors.shadow
+        }
+      ]}>
+        <Ionicons
+          name="search"
+          size={20}
+          color={colors.textSecondary}
+          style={styles.searchIcon}
+        />
+
         <TextInput
           style={[styles.searchInput, { color: colors.text }]}
           placeholder="Search hospitals, malls, parks..."
@@ -72,14 +100,29 @@ export default function HomeScreen() {
           placeholderTextColor={colors.textSecondary}
           returnKeyType="search"
         />
+
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={spacing.hitSlop}>
-            <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+          <TouchableOpacity
+            onPress={() => setSearchQuery('')}
+            hitSlop={spacing.hitSlop}
+          >
+            <Ionicons
+              name="close-circle"
+              size={18}
+              color={colors.textSecondary}
+            />
           </TouchableOpacity>
         )}
       </View>
+
       <LiveIndicator />
     </View>
+  );
+
+  // ✅ FIX: Memoize header
+  const memoizedHeader = useMemo(
+    () => renderHeader(),
+    [searchQuery, filteredLocations.length, colors]
   );
 
   if (isLoading) {
@@ -101,14 +144,21 @@ export default function HomeScreen() {
         renderItem={({ item }) => (
           <ListItem
             item={item}
-            crowdData={getCrowdLevel(item.currentUsers, item.maxCapacity)}
+            crowdData={getCrowdLevel(
+              item.currentUsers,
+              item.maxCapacity
+            )}
             onPress={() => handlePress(item.id)}
           />
         )}
         contentContainerStyle={styles.list}
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={memoizedHeader}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
         }
         ListEmptyComponent={
           <EmptyState
@@ -125,18 +175,46 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container:   { flex: 1 },
-  list:        { padding: spacing.m, paddingBottom: spacing.xxl },
-  headerContainer: { marginBottom: spacing.m },
-  greeting:    { fontSize: 22, fontWeight: '800', marginBottom: 2, letterSpacing: -0.3 },
-  subGreeting: { fontSize: typography.smallSize, fontWeight: '500', marginBottom: spacing.m },
+  container: { flex: 1 },
+
+  list: {
+    padding: spacing.m,
+    paddingBottom: spacing.xxl
+  },
+
+  headerContainer: {
+    marginBottom: spacing.m
+  },
+
+  greeting: {
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: 2,
+    letterSpacing: -0.3
+  },
+
+  subGreeting: {
+    fontSize: typography.smallSize,
+    fontWeight: '500',
+    marginBottom: spacing.m
+  },
+
   searchBox: {
-    flexDirection: 'row', alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
     borderRadius: spacing.borderRadiusSmall + 4,
     paddingHorizontal: spacing.m,
-    height: 50, borderWidth: 1,
+    height: 50,
+    borderWidth: 1,
     marginBottom: 4,
   },
-  searchIcon:  { marginRight: spacing.s },
-  searchInput: { flex: 1, fontSize: typography.bodySize },
+
+  searchIcon: {
+    marginRight: spacing.s
+  },
+
+  searchInput: {
+    flex: 1,
+    fontSize: typography.bodySize
+  }
 });
