@@ -1,50 +1,75 @@
-# Welcome to your Expo app 👋
+# Crowd Sense 📱
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Crowd Sense is a real-time mobile application built with React Native (Expo) and Firebase to help users monitor public location crowds, discover less-crowded alternative spots, and wait in virtual queues with priority support.
 
-## Get started
+## Core Features
+- **Real-time Crowd Updates:** Monitor crowds (Low, Medium, High) at common locations like Canteens, Libraries, and Hospitals.
+- **Smart Alternative Recommendations:** If your chosen location is highly crowded, get instant recommendations for nearby alternatives of the same type with lower wait times.
+- **Virtual Queue System:** Join a queue virtually instead of waiting physically in line. Includes a priority queue logic check.
+- **Community Updates:** Users can submit their own crowd updates for locations.
+- **Authentication:** Secure login and sign-up structure ready to be hooked to Firebase Auth.
 
-1. Install dependencies
+---
 
+## 🚀 Quick Setup & Deployment Guide
+
+This project was built with React Native utilizing the **Expo** framework and **Firebase**.
+Follow these steps to deploy and run it on your own machine.
+
+### Prerequisites
+Make sure you have Node.js installed, along with either iOS Simulator (Mac), Android Studio Emulator (Windows/Mac/Linux), or the **Expo Go** app on your physical smartphone.
+
+### 1. Installation
+
+1. Navigate to the project directory:
+   ```bash
+   cd CrowdSense
+   ```
+
+2. Install all necessary dependencies:
    ```bash
    npm install
    ```
 
-2. Start the app
+### 2. Configure Firebase (Backend)
 
-   ```bash
-   npx expo start
+The app is currently structured with placeholder API keys to prevent crashes.
+
+1. Go to the [Firebase Console](https://console.firebase.google.com/).
+2. Create a new project named "Crowd Sense".
+3. Enable **Authentication** (Email/Password provider).
+4. Enable **Firestore Database** (Start in test mode for development).
+5. Go to Project Settings > General > "Your apps" section and add a Web App to get your config object.
+6. Open the file `config/firebase.js` in this repository and replace the `firebaseConfig` variables with your real keys:
+
+   ```javascript
+   const firebaseConfig = {
+     apiKey: "YOUR_API_KEY",
+     authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+     projectId: "YOUR_PROJECT_ID",
+     // ... storageBucket, messagingSenderId, appId
+   };
    ```
 
-In the output, you'll find options to open the app in a
+### 3. Running the App
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Start the Expo development server:
 
 ```bash
-npm run reset-project
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+- To run on your **physical device**, scan the QR code printed in the terminal using the Expo Go app (Android) or your Camera app (iOS).
+- To run on an **Android Emulator**, press `a` in the terminal.
+- To run on an **iOS Simulator** (Mac only), press `i` in the terminal.
 
-## Learn more
+### 4. Testing the Data
 
-To learn more about developing your project with Expo, look at the following resources:
+Since you will start with an empty Firestore database, the `src/services/mockDataService.js` is currently providing hardcoded data (`College Canteen`, `Central Library`, etc.) for you to view in the UI immediately without any extra setup. Once you're ready to read directly from Firestore, you can swap out the mock functions in that service file.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Tech Stack
+- React Native
+- Expo
+- React Navigation (Bottom Tabs, Native Stack)
+- Firebase (Auth, Firestore)
+- Expo Vector Icons
